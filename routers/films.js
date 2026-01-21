@@ -6,6 +6,9 @@ const router = express.Router();
 
 router.get("/", filmsController.index)
 
+router.get("/search", filmsController.search)
+
+
 router.get("/:id", checkIdExist, filmsController.show)
 
 export default router
