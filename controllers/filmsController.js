@@ -1,3 +1,4 @@
+import slugify from "slugify";
 import connection from "../database/db.js";
 
 function index(req, res, next) {
@@ -40,16 +41,16 @@ function index(req, res, next) {
 }
 
 function show(req, res, next) {
-    const id = req.params.id;
+    const slug = req.params.slug;
 
     const query = `
     select movies.*, avg(reviews.vote) as voto_medio
     from movies
     left join reviews
     on movies.id = reviews.movie_id
-    where movies.id = ?`
+    where movies.slug = ?`
 
-    connection.query(query, [id], (err, results) => {
+    connection.query(query, [slug], (err, results) => {
         if (err) return next(err);
 
         const movie = results[0];
@@ -59,7 +60,7 @@ function show(req, res, next) {
         from reviews
         where movie_id = ?`
 
-        connection.query(queryReviews, [id], (err, reviewsResults) => {
+        connection.query(queryReviews, [movie.id], (err, reviewsResults) => {
             if (err) return next(err);
             res.json({
                 ...movie,
@@ -111,8 +112,33 @@ function search(req, res, next){
 
 }
 
+function store(req, res, next){
+    console.log(req.body, req.file);
+    
+    const dati = req.body;
+    const slug = slugify(dati.title, {
+        lower: true,
+        strict: true,
+    })
+    
+    const sql = `
+    insert into movies (slug, title, director, abstract, image)
+    value (?, ?, ?, ?, ?)`
+
+    connection.query(sql, [slug, dati.title, dati.director, dati.abstract, req.file.filename], (err, results) => {
+        if(err) return next(err);
+
+        return res.status(201).json({
+            message: "Film aggiunto con successo",
+            id: results.insertId
+        })
+    })
+    
+}
+
 export default {
     index,
     show,
     search,
+    store,
 }
